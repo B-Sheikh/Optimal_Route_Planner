@@ -2,8 +2,10 @@ import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.net.URI;
 import java.util.*;
 import java.util.List;
+import java.awt.Desktop;
 
 // Main application window — Last-Mile Delivery Route Planner (Coimbatore)
 public class DeliveryPlannerApp extends JFrame {
@@ -15,6 +17,7 @@ public class DeliveryPlannerApp extends JFrame {
     private DefaultListModel<String> selectedModel;
     private JLabel  statusLabel;
     private JLabel  distanceLabel;
+    private List<String> currentRoute; // Track the last planned route
 
     private static final String WAREHOUSE = "Gandhipuram";
 
@@ -124,11 +127,17 @@ public class DeliveryPlannerApp extends JFrame {
         JButton resetBtn = styledButton("🔄  Reset", new Color(90, 90, 110));
         resetBtn.addActionListener(e -> {
             selectedModel.clear();
+            currentRoute = null;
             mapPanel.clearRoute();
             statusLabel.setText("Select stops and click Plan Route.");
             distanceLabel.setText("Total Distance: —");
         });
         controls.add(resetBtn);
+        controls.add(Box.createVerticalStrut(8));
+
+        JButton gMapsBtn = styledButton("📍  Open in Google Maps", new Color(219, 68, 55));
+        gMapsBtn.addActionListener(e -> openInGoogleMaps());
+        controls.add(gMapsBtn);
         controls.add(Box.createVerticalStrut(20));
 
         // -- Status --
@@ -160,6 +169,7 @@ public class DeliveryPlannerApp extends JFrame {
         }
 
         List<String> route = optimizer.planMultiStopRoute(graph, WAREHOUSE, deliveries);
+        this.currentRoute = route;
         double total = optimizer.calculateTotalDistance(graph, route);
 
         mapPanel.setRoute(route, deliveries);
@@ -181,6 +191,26 @@ public class DeliveryPlannerApp extends JFrame {
         distanceLabel.setText(String.format("Total Distance: %.1f km", total));
     }
 
+    private void openInGoogleMaps() {
+        if (currentRoute == null || currentRoute.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please plan a route first.", "No Route", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        try {
+            StringBuilder url = new StringBuilder("https://www.google.com/maps/dir/");
+            for (String stopName : currentRoute) {
+                DeliveryPoint p = graph.getPoint(stopName);
+                if (p != null) {
+                    url.append(p.getLat()).append(",").append(p.getLng()).append("/");
+                }
+            }
+            Desktop.getDesktop().browse(new URI(url.toString()));
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error opening Google Maps: " + ex.getMessage(), "Error", ERROR_MESSAGE);
+        }
+    }
+
     private JButton styledButton(String text, Color bg) {
         JButton btn = new JButton(text);
         btn.setBackground(bg);
@@ -191,6 +221,17 @@ public class DeliveryPlannerApp extends JFrame {
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setMaximumSize(new Dimension(280, 38));
         btn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        // Hover effect
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btn.setBackground(bg.brighter());
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btn.setBackground(bg);
+            }
+        });
+        
         return btn;
     }
 

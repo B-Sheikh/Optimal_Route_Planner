@@ -12,20 +12,21 @@ public class MapPanel extends JPanel {
     private List<String>    deliveries;   // actual delivery stops
 
     private static final Color BG_COLOR         = new Color(22, 28, 45);
-    private static final Color ROAD_COLOR        = new Color(70, 80, 100);
-    private static final Color ROUTE_COLOR       = new Color(255, 160, 30);
-    private static final Color NODE_DEFAULT      = new Color(80, 120, 200);
-    private static final Color NODE_WAREHOUSE    = new Color(50, 200, 120);
+    private static final Color ROAD_COLOR        = new Color(50, 60, 85);
+    private static final Color ROUTE_COLOR       = new Color(0, 210, 255); // Cyan for route
+    private static final Color NODE_DEFAULT      = new Color(100, 110, 140);
+    private static final Color NODE_WAREHOUSE    = new Color(255, 80, 80); // Red for warehouse
     private static final Color NODE_DELIVERY     = new Color(255, 200, 50);
-    private static final Color NODE_ON_ROUTE     = new Color(255, 100, 60);
+    private static final Color NODE_ON_ROUTE     = new Color(80, 255, 180);
     private static final Color LABEL_COLOR       = Color.WHITE;
-    private static final Color WEIGHT_COLOR      = new Color(160, 175, 200);
+    private static final Color WEIGHT_COLOR      = new Color(130, 145, 170);
 
     public MapPanel(DeliveryGraph graph) {
         this.graph     = graph;
         this.route     = new ArrayList<>();
         this.deliveries = new ArrayList<>();
         setBackground(BG_COLOR);
+        setToolTipText(""); // Enable tooltips
     }
 
     public void setRoute(List<String> route, List<String> deliveries) {
@@ -53,6 +54,18 @@ public class MapPanel extends JPanel {
         if (!route.isEmpty()) drawRoute(g2);
         drawNodes(g2);
         drawLegend(g2);
+    }
+
+    @Override
+    public String getToolTipText(java.awt.event.MouseEvent e) {
+        for (DeliveryPoint dp : graph.getPoints().values()) {
+            if (Math.hypot(e.getX() - dp.getX(), e.getY() - dp.getY()) < 18) {
+                return String.format("<html><b>%s</b><br>Lat: %.4f, Lng: %.4f%s</html>", 
+                    dp.getName(), dp.getLat(), dp.getLng(), 
+                    dp.isWarehouse() ? " (Warehouse)" : "");
+            }
+        }
+        return null;
     }
 
     private void drawAllRoads(Graphics2D g2) {
